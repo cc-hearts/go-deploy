@@ -6,6 +6,7 @@ import (
 	"go-deploy/db"
 	"go-deploy/ssh"
 	"net/http"
+	"strconv"
 )
 
 type SuccessMsg struct {
@@ -22,7 +23,14 @@ func initDeployHttp() {
 			http.Error(w, "request method failed", http.StatusInternalServerError)
 			return
 		}
-		result, err := db.QueryConfig(1)
+		queryParams := r.URL.Query()
+		queryId := queryParams.Get("id")
+		id, err := strconv.Atoi(queryId)
+		if err != nil {
+			http.Error(w, "id field is invalid", http.StatusInternalServerError)
+			return
+		}
+		result, err := db.QueryConfig(id)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -43,8 +51,7 @@ func initDeployHttp() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		fmt.Println(string(jsonData))
-		w.Write(*logger)
+		w.Write(jsonData)
 
 	})
 }

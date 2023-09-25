@@ -1,12 +1,13 @@
 package db
 
 import (
-	"go-deploy/ssh"
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	"go-deploy/ssh"
 	"log"
 	"strconv"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type DeployConfig struct {
@@ -48,6 +49,6 @@ func QueryConfig(id int) (*DeployConfig, error) {
 			return nil, err
 		}
 	}
-	log.Fatalf("query successful: %v\n", config)
+	fmt.Printf("query successful: %v\n", config)
 	return &config, nil
 }
