@@ -3,8 +3,9 @@ package ssh
 import (
 	"database/sql"
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"log"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func GenConfig() *ssh.ClientConfig {
@@ -50,7 +51,10 @@ func Deploy(rootPath *string, shellCommand *sql.NullString) *[]byte {
 	if shellCommand.Valid {
 		configShell = shellCommand.String
 	}
-	var command = "cd " + *rootPath + " && " + configShell
+	var command = "cd " + *rootPath
+	if configShell == "" {
+		command += command + " && " + configShell
+	}
 	fmt.Println(command)
 	output, err := session.CombinedOutput(command)
 	if err != nil {
