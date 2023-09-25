@@ -48,7 +48,7 @@ Run Go Deploy:
 > Go Deploy will automatically load the environment variables from the `.env` file and execute the configured deployment command.
 
 ```shell
-   go-deploy
+   go run main.go
 ```
 
 ## Build
