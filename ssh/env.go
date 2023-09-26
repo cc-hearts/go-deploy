@@ -2,9 +2,9 @@ package ssh
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/joho/godotenv"
+	"os"
+	"sync"
 )
 
 type InnerEnv struct {
@@ -23,9 +23,10 @@ func init() {
 }
 
 var sshEnv *InnerEnv
+var once sync.Once
 
 func GetSshEnv() *InnerEnv {
-	if sshEnv == nil {
+	once.Do(func() {
 		sshEnv = &InnerEnv{
 			Host:      os.Getenv("SSH_HOST"),
 			User:      os.Getenv("SSH_USER"),
@@ -33,6 +34,6 @@ func GetSshEnv() *InnerEnv {
 			MysqlHost: os.Getenv("SSH_MYSQL_HOST"),
 			Port:      os.Getenv("PORT"),
 		}
-	}
+	})
 	return sshEnv
 }
