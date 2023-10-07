@@ -3,19 +3,17 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"go-deploy/ssh"
 	"log"
-	"strconv"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type DeployConfig struct {
-	Id           int
-	RootPath     string
-	Config       sql.NullString
-	ShellCommand sql.NullString
-	Name         string
+	Id           int            `db:"id"`
+	RootPath     string         `db:"root_path"`
+	Config       sql.NullString `db:"config"`
+	ShellCommand sql.NullString `db:"shell_command"`
+	Name         string         `db:"name"`
 }
 
 func connection() (*sql.DB, error) {
@@ -61,7 +59,7 @@ func QueryConfig(id int) (*DeployConfig, error) {
 		return nil, err
 	}
 	defer db.Close()
-	result, err := db.Query("select id,rootPath,config,shellCommand,name from deploy_config where id = ?", strconv.Itoa(id))
+	result, err := db.Query(`select id ,root_path,config,shell_command,name from c_deploy where id = ?`, id)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -74,6 +72,6 @@ func QueryConfig(id int) (*DeployConfig, error) {
 			return nil, err
 		}
 	}
-	fmt.Printf("query successful: %v\n", config)
+	fmt.Printf("query successful: %#v\n", config)
 	return &config, nil
 }

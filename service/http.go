@@ -10,8 +10,8 @@ import (
 )
 
 type SuccessMsg struct {
-	Code int    `json:"Code"`
-	Msg  string `json:"Msg"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 func initDeployHttp() {

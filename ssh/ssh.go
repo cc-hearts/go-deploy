@@ -48,12 +48,14 @@ func Deploy(rootPath *string, shellCommand *sql.NullString) *[]byte {
 	}
 	defer session.Close()
 	configShell := ""
-	if shellCommand.Valid {
+
+	if shellCommand.Valid == true {
 		configShell = shellCommand.String
 	}
+
 	var command = "cd " + *rootPath
-	if configShell == "" {
-		command += command + " && " + configShell
+	if configShell != "" {
+		command = command + " && " + configShell
 	}
 	fmt.Println(command)
 	output, err := session.CombinedOutput(command)
