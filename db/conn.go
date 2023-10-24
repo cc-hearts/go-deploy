@@ -59,7 +59,8 @@ func QueryConfig(id int) (*DeployConfig, error) {
 		return nil, err
 	}
 	defer db.Close()
-	result, err := db.Query(`select id ,root_path,config,shell_command,name from c_deploy where id = ?`, id)
+	result, err := db.Query(`select id,root_path,config,shell_command,name from c_deploy where id = ?`, id)
+	defer result.Close()
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -72,6 +73,5 @@ func QueryConfig(id int) (*DeployConfig, error) {
 			return nil, err
 		}
 	}
-	fmt.Printf("query successful: %#v\n", config)
 	return &config, nil
 }

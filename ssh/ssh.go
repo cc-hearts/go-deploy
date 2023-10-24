@@ -1,9 +1,12 @@
 package ssh
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -29,6 +32,26 @@ func Connection() *ssh.Client {
 	return coon
 }
 
+func printOutput(outputReader io.Reader, w *http.ResponseWriter, isResponseWrite bool) {
+	flusher, ok := (*w).(http.Flusher)
+	if !ok {
+		http.Error(*w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+	scanner := bufio.NewScanner(outputReader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		(*w).Write([]byte(line + "\n"))
+		if isResponseWrite == true {
+			fmt.Println(line)
+			flusher.Flush()
+		}
+	}
+	if scanner.Err() != nil {
+		http.Error(*w, scanner.Err().Error(), http.StatusInternalServerError)
+	}
+}
+
 func CreateSession(conn *ssh.Client) *ssh.Session {
 	session, err := conn.NewSession()
 	if err != nil {
@@ -38,13 +61,12 @@ func CreateSession(conn *ssh.Client) *ssh.Session {
 	return session
 }
 
-func Deploy(rootPath *string, shellCommand *sql.NullString) *[]byte {
+func Deploy(rootPath *string, shellCommand *sql.NullString, w *http.ResponseWriter, r *http.Request) {
 	conn := Connection()
 	defer conn.Close()
 	session := CreateSession(conn)
 	if session == nil {
-		log.Fatal("session is nil")
-		return nil
+		http.Error(*w, "Failed to create session", http.StatusInternalServerError)
 	}
 	defer session.Close()
 	configShell := ""
@@ -57,11 +79,37 @@ func Deploy(rootPath *string, shellCommand *sql.NullString) *[]byte {
 	if configShell != "" {
 		command = command + " && " + configShell
 	}
-	fmt.Println(command)
-	output, err := session.CombinedOutput(command)
+
+	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Fatalf("Failed to execute command: %s", err)
-		return nil
+		http.Error(*w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return &output
+	stderr, err := session.StderrPipe()
+	if err != nil {
+		http.Error(*w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	session.Start(command)
+
+	ctx := r.Context()
+	ch := make(chan struct{})
+
+	// 打印标准输出
+	go printOutput(stdout, w, true)
+
+	// 打印标准错误输出
+	go printOutput(stderr, w, false)
+
+	go func(ch chan struct{}) {
+		err = session.Wait()
+		ch <- struct{}{}
+	}(ch)
+
+	select {
+	case <-ch:
+	case <-ctx.Done():
+		err := ctx.Err()
+		http.Error(*w, err.Error(), http.StatusInternalServerError)
+	}
 }

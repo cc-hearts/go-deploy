@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"go-deploy/db"
 	"go-deploy/ssh"
@@ -16,13 +15,15 @@ type SuccessMsg struct {
 
 func initDeployHttp() {
 	http.HandleFunc("/deploy", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
 		// http 获取 get后面的Query参数
 		if r.Method != http.MethodGet {
 			http.Error(w, "request method failed", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+
 		queryParams := r.URL.Query()
 		queryId := queryParams.Get("id")
 		id, err := strconv.Atoi(queryId)
@@ -35,24 +36,7 @@ func initDeployHttp() {
 			fmt.Println("Error:", err)
 			return
 		}
-		logger := ssh.Deploy(&result.RootPath, &result.ShellCommand)
-		if logger == nil {
-			fmt.Println("logger get failed :", logger)
-		}
-
-		response := SuccessMsg{
-			Code: 200,
-			Msg:  fmt.Sprintf("%s", logger),
-		}
-		fmt.Println("response:", response)
-		jsonData, err := json.Marshal(response)
-		fmt.Println("json,", jsonData)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
-		w.Write(jsonData)
-
+		ssh.Deploy(&result.RootPath, &result.ShellCommand, &w, r)
 	})
 }
 
